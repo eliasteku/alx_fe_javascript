@@ -1,9 +1,10 @@
 let quotes = [];
 let selectedCategory = 'all'; 
 
-// Simulated server URL (JSONPlaceholder doesn’t really support quotes, so use your own mock or fake API)
+// Simulated server URL (replace with your real API if you have one)
 const SERVER_URL = 'https://jsonplaceholder.typicode.com/posts'; // Example placeholder URL
 
+// Load quotes from local storage or initialize default quotes
 function loadQuotes() {
   const savedQuotes = localStorage.getItem('quotes');
   if (savedQuotes) {
@@ -18,15 +19,18 @@ function loadQuotes() {
   }
 }
 
+// Save quotes array to local storage
 function saveQuotes() {
   localStorage.setItem('quotes', JSON.stringify(quotes));
 }
 
+// Get unique categories from quotes
 function getUniqueCategories() {
   const categories = new Set(quotes.map(q => q.category));
   return Array.from(categories).sort();
 }
 
+// Populate category dropdown dynamically
 function populateCategories() {
   const select = document.getElementById('categoryFilter');
   select.innerHTML = '<option value="all">All Categories</option>';
@@ -49,6 +53,7 @@ function populateCategories() {
   }
 }
 
+// Filter quotes based on selected category and display a random one
 function filterQuotes() {
   selectedCategory = document.getElementById('categoryFilter').value;
   localStorage.setItem('lastSelectedCategory', selectedCategory);
@@ -71,10 +76,12 @@ function filterQuotes() {
   sessionStorage.setItem('lastFilteredCategory', selectedCategory);
 }
 
+// Show random quote according to filter
 function showRandomQuote() {
   filterQuotes();
 }
 
+// Show last displayed quote (if any)
 function showLastQuote() {
   const lastCategory = sessionStorage.getItem('lastFilteredCategory') || 'all';
   const lastIndex = sessionStorage.getItem('lastFilteredQuoteIndex');
@@ -100,6 +107,7 @@ function showLastQuote() {
   document.getElementById('categoryFilter').value = lastCategory;
 }
 
+// Add a new quote and update storage and UI
 function addQuote() {
   const text = document.getElementById('newQuoteText').value.trim();
   const category = document.getElementById('newQuoteCategory').value.trim();
@@ -118,6 +126,7 @@ function addQuote() {
   }
 }
 
+// Create form dynamically (if needed)
 function createAddQuoteForm() {
   const formContainer = document.createElement('div');
 
@@ -142,6 +151,7 @@ function createAddQuoteForm() {
   document.body.appendChild(formContainer);
 }
 
+// Import quotes from JSON file input
 function importFromJsonFile(event) {
   const fileReader = new FileReader();
   fileReader.onload = function(event) {
@@ -163,7 +173,21 @@ function importFromJsonFile(event) {
   fileReader.readAsText(event.target.files[0]);
 }
 
-// -------------- New: Sync with server --------------
+// Export quotes to JSON file download
+function exportQuotes() {
+  const json = JSON.stringify(quotes, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'quotes.json';
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+// -------------- Server Syncing --------------
 
 // Fetch quotes from server (simulate GET)
 async function fetchQuotesFromServer() {
@@ -174,23 +198,22 @@ async function fetchQuotesFromServer() {
     const serverData = await response.json();
 
     // Convert server data to expected format: {text, category}
-    // Here we simulate: JSONPlaceholder posts have 'title' and 'body'
+    // Simulated: JSONPlaceholder posts have 'title' which we use as text, category fixed as 'Server'
     const serverQuotes = serverData.map(item => ({
       text: item.title || 'No text',
-      category: 'Server' // default category for demo
+      category: 'Server' 
     }));
 
-    // Merge serverQuotes with local quotes, resolving conflicts:
-    // Strategy: server data overwrites local quotes if text matches
+    // Merge serverQuotes with local quotes, conflict resolution: server overwrites local
     let updated = false;
     serverQuotes.forEach(sq => {
       const localIndex = quotes.findIndex(lq => lq.text === sq.text);
       if (localIndex === -1) {
-        // New quote from server - add it
+        // New quote from server
         quotes.push(sq);
         updated = true;
       } else {
-        // Conflict: overwrite local with server version
+        // Conflict: overwrite local with server version if different
         if (JSON.stringify(quotes[localIndex]) !== JSON.stringify(sq)) {
           quotes[localIndex] = sq;
           updated = true;
@@ -210,7 +233,33 @@ async function fetchQuotesFromServer() {
   }
 }
 
-// Notify user about sync
+// Send local quotes to server (simulate POST)
+async function sendQuotesToServer() {
+  try {
+    const response = await fetch(SERVER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(quotes)
+    });
+    if (!response.ok) throw new Error('Failed to send quotes');
+    const data = await response.json();
+    console.log('Server response to POST:', data);
+    showNotification('Quotes successfully synced to server.');
+  } catch (error) {
+    console.error('POST error:', error);
+    showNotification('Error syncing quotes to server.');
+  }
+}
+
+// Combined sync function to GET and POST
+async function syncWithServer() {
+  await fetchQuotesFromServer();
+  await sendQuotesToServer();
+}
+
+// Show notification messages
 function showNotification(message) {
   let notif = document.getElementById('notification');
   if (!notif) {
@@ -231,13 +280,7 @@ function showNotification(message) {
   setTimeout(() => { notif.style.display = 'none'; }, 4000);
 }
 
-// Periodically sync every 60 seconds
-setInterval(fetchQuotesFromServer, 60000);
-
-// Call once on load
-fetchQuotesFromServer();
-
-// -------------- End of new sync code --------------
+// ------------------- INIT -------------------
 
 loadQuotes();
 populateCategories();
@@ -245,16 +288,13 @@ showLastQuote();
 createAddQuoteForm();
 
 document.getElementById('newQuote').addEventListener('click', showRandomQuote);
-document.getElementById('exportQuotes').addEventListener('click', () => {
-  const json = JSON.stringify(quotes, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
 
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'quotes.json';
-  a.click();
-
-  URL.revokeObjectURL(url);
-});
+// Attach event listeners for import/export buttons (assumes they exist in your HTML)
+document.getElementById('exportQuotes').addEventListener('click', exportQuotes);
 document.getElementById('importFile').addEventListener('change', importFromJsonFile);
+
+// Start periodic syncing every 60 seconds
+setInterval(syncWithServer, 60000);
+
+// Initial sync call on load
+syncWithServer();
