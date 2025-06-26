@@ -4,6 +4,7 @@ let quotes = [
   { text: "If life were predictable it would cease to be life.", category: "Philosophy" }
 ];
 
+// Show a random quote
 function showRandomQuote() {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   const quote = quotes[randomIndex];
@@ -15,8 +16,7 @@ function showRandomQuote() {
   `;
 }
 
-document.getElementById('newQuote').addEventListener('click', showRandomQuote);
-
+// Add a new quote
 function addQuote() {
   const text = document.getElementById('newQuoteText').value.trim();
   const category = document.getElementById('newQuoteCategory').value.trim();
@@ -30,3 +30,32 @@ function addQuote() {
     alert("Please fill in both fields.");
   }
 }
+
+// Dynamically create the input form (required by ALX)
+function createAddQuoteForm() {
+  const formContainer = document.createElement('div');
+
+  const quoteInput = document.createElement('input');
+  quoteInput.id = 'newQuoteText';
+  quoteInput.placeholder = 'Enter a new quote';
+  quoteInput.type = 'text';
+
+  const categoryInput = document.createElement('input');
+  categoryInput.id = 'newQuoteCategory';
+  categoryInput.placeholder = 'Enter quote category';
+  categoryInput.type = 'text';
+
+  const addButton = document.createElement('button');
+  addButton.textContent = 'Add Quote';
+  addButton.onclick = addQuote;
+
+  formContainer.appendChild(quoteInput);
+  formContainer.appendChild(categoryInput);
+  formContainer.appendChild(addButton);
+
+  document.body.appendChild(formContainer);
+}
+
+// Set up event listener and build form
+document.getElementById('newQuote').addEventListener('click', showRandomQuote);
+createAddQuoteForm(); // Call the dynamic form builder
