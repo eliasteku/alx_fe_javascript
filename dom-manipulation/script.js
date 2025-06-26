@@ -1,4 +1,5 @@
 let quotes = [];
+let selectedCategory = 'all';  // <-- Added global variable
 
 function loadQuotes() {
   const savedQuotes = localStorage.getItem('quotes');
@@ -36,18 +37,22 @@ function populateCategories() {
     select.appendChild(option);
   });
 
-  // Restore last selected filter from localStorage
+  // Restore last selected filter from localStorage, update selectedCategory variable
   const lastFilter = localStorage.getItem('lastSelectedCategory');
   if (lastFilter && (lastFilter === 'all' || categories.includes(lastFilter))) {
+    selectedCategory = lastFilter;          // update global var here
     select.value = lastFilter;
+  } else {
+    selectedCategory = 'all';
+    select.value = 'all';
   }
 }
 
 function filterQuotes() {
-  const filterValue = document.getElementById('categoryFilter').value;
-  localStorage.setItem('lastSelectedCategory', filterValue);
+  selectedCategory = document.getElementById('categoryFilter').value;  // update global var
+  localStorage.setItem('lastSelectedCategory', selectedCategory);
 
-  const filteredQuotes = filterValue === 'all' ? quotes : quotes.filter(q => q.category === filterValue);
+  const filteredQuotes = selectedCategory === 'all' ? quotes : quotes.filter(q => q.category === selectedCategory);
   
   if (filteredQuotes.length === 0) {
     document.getElementById('quoteDisplay').innerHTML = '<p>No quotes found for this category.</p>';
@@ -63,7 +68,7 @@ function filterQuotes() {
 
   // Save last shown filtered quote index (index in filteredQuotes)
   sessionStorage.setItem('lastFilteredQuoteIndex', randomIndex);
-  sessionStorage.setItem('lastFilteredCategory', filterValue);
+  sessionStorage.setItem('lastFilteredCategory', selectedCategory);
 }
 
 function showRandomQuote() {
@@ -92,6 +97,7 @@ function showLastQuote() {
     <p><em>Category:</em> ${quote.category}</p>
   `;
 
+  selectedCategory = lastCategory;
   document.getElementById('categoryFilter').value = lastCategory;
 }
 
