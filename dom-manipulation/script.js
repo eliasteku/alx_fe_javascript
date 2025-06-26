@@ -1,5 +1,8 @@
 let quotes = [];
-let selectedCategory = 'all';  // <-- Added global variable
+let selectedCategory = 'all'; 
+
+// Simulated server URL (JSONPlaceholder doesn’t really support quotes, so use your own mock or fake API)
+const SERVER_URL = 'https://jsonplaceholder.typicode.com/posts'; // Example placeholder URL
 
 function loadQuotes() {
   const savedQuotes = localStorage.getItem('quotes');
@@ -26,7 +29,6 @@ function getUniqueCategories() {
 
 function populateCategories() {
   const select = document.getElementById('categoryFilter');
-  // Remove all except "All Categories"
   select.innerHTML = '<option value="all">All Categories</option>';
 
   const categories = getUniqueCategories();
@@ -37,10 +39,9 @@ function populateCategories() {
     select.appendChild(option);
   });
 
-  // Restore last selected filter from localStorage, update selectedCategory variable
   const lastFilter = localStorage.getItem('lastSelectedCategory');
   if (lastFilter && (lastFilter === 'all' || categories.includes(lastFilter))) {
-    selectedCategory = lastFilter;          // update global var here
+    selectedCategory = lastFilter;
     select.value = lastFilter;
   } else {
     selectedCategory = 'all';
@@ -49,7 +50,7 @@ function populateCategories() {
 }
 
 function filterQuotes() {
-  selectedCategory = document.getElementById('categoryFilter').value;  // update global var
+  selectedCategory = document.getElementById('categoryFilter').value;
   localStorage.setItem('lastSelectedCategory', selectedCategory);
 
   const filteredQuotes = selectedCategory === 'all' ? quotes : quotes.filter(q => q.category === selectedCategory);
@@ -66,13 +67,11 @@ function filterQuotes() {
     <p><em>Category:</em> ${quote.category}</p>
   `;
 
-  // Save last shown filtered quote index (index in filteredQuotes)
   sessionStorage.setItem('lastFilteredQuoteIndex', randomIndex);
   sessionStorage.setItem('lastFilteredCategory', selectedCategory);
 }
 
 function showRandomQuote() {
-  // Use current filter selection
   filterQuotes();
 }
 
@@ -113,7 +112,6 @@ function addQuote() {
     document.getElementById('newQuoteText').value = '';
     document.getElementById('newQuoteCategory').value = '';
 
-    // Refresh the displayed quote according to current filter
     showRandomQuote();
   } else {
     alert("Please fill in both fields.");
@@ -165,13 +163,87 @@ function importFromJsonFile(event) {
   fileReader.readAsText(event.target.files[0]);
 }
 
-// Initialize app
+// -------------- New: Sync with server --------------
+
+// Fetch quotes from server (simulate GET)
+async function fetchQuotesFromServer() {
+  try {
+    const response = await fetch(SERVER_URL);
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    const serverData = await response.json();
+
+    // Convert server data to expected format: {text, category}
+    // Here we simulate: JSONPlaceholder posts have 'title' and 'body'
+    const serverQuotes = serverData.map(item => ({
+      text: item.title || 'No text',
+      category: 'Server' // default category for demo
+    }));
+
+    // Merge serverQuotes with local quotes, resolving conflicts:
+    // Strategy: server data overwrites local quotes if text matches
+    let updated = false;
+    serverQuotes.forEach(sq => {
+      const localIndex = quotes.findIndex(lq => lq.text === sq.text);
+      if (localIndex === -1) {
+        // New quote from server - add it
+        quotes.push(sq);
+        updated = true;
+      } else {
+        // Conflict: overwrite local with server version
+        if (JSON.stringify(quotes[localIndex]) !== JSON.stringify(sq)) {
+          quotes[localIndex] = sq;
+          updated = true;
+        }
+      }
+    });
+
+    if (updated) {
+      saveQuotes();
+      populateCategories();
+      showRandomQuote();
+      showNotification("Quotes updated from server.");
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    showNotification("Error fetching data from server.");
+  }
+}
+
+// Notify user about sync
+function showNotification(message) {
+  let notif = document.getElementById('notification');
+  if (!notif) {
+    notif = document.createElement('div');
+    notif.id = 'notification';
+    notif.style.position = 'fixed';
+    notif.style.top = '10px';
+    notif.style.right = '10px';
+    notif.style.backgroundColor = '#4CAF50';
+    notif.style.color = 'white';
+    notif.style.padding = '10px';
+    notif.style.borderRadius = '5px';
+    notif.style.zIndex = 1000;
+    document.body.appendChild(notif);
+  }
+  notif.textContent = message;
+  notif.style.display = 'block';
+  setTimeout(() => { notif.style.display = 'none'; }, 4000);
+}
+
+// Periodically sync every 60 seconds
+setInterval(fetchQuotesFromServer, 60000);
+
+// Call once on load
+fetchQuotesFromServer();
+
+// -------------- End of new sync code --------------
+
 loadQuotes();
 populateCategories();
 showLastQuote();
 createAddQuoteForm();
 
-// Event listeners
 document.getElementById('newQuote').addEventListener('click', showRandomQuote);
 document.getElementById('exportQuotes').addEventListener('click', () => {
   const json = JSON.stringify(quotes, null, 2);
