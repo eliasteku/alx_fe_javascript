@@ -246,7 +246,7 @@ async function sendQuotesToServer() {
     if (!response.ok) throw new Error('Failed to send quotes');
     const data = await response.json();
     console.log('Server response to POST:', data);
-    showNotification('Quotes successfully synced to server.');
+    showNotification('Quotes synced with server!');
   } catch (error) {
     console.error('POST error:', error);
     showNotification('Error syncing quotes to server.');
