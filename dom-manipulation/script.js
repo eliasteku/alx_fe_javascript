@@ -254,7 +254,7 @@ async function sendQuotesToServer() {
 }
 
 // Combined sync function to GET and POST
-async function syncWithServer() {
+async function syncQuotes() {
   await fetchQuotesFromServer();
   await sendQuotesToServer();
 }
@@ -294,7 +294,7 @@ document.getElementById('exportQuotes').addEventListener('click', exportQuotes);
 document.getElementById('importFile').addEventListener('change', importFromJsonFile);
 
 // Start periodic syncing every 60 seconds
-setInterval(syncWithServer, 60000);
+setInterval(syncQuotes, 60000);
 
 // Initial sync call on load
-syncWithServer();
+syncQuotes();
